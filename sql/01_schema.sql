@@ -67,7 +67,7 @@ CREATE TABLE Planos(
 CREATE TABLE Assinaturas(
     id_assinatura INT AUTO_INCREMENT,
     data_inicio DATE NOT NULL,
-    data_fim DATE NOT NULL, 
+    data_fim DATE, 
     status ENUM('ATIVA','CANCELADA','PAUSADA') DEFAULT 'ATIVA' NOT NULL,
     id_plano INT NOT NULL,
     id_cliente INT NOT NULL,
@@ -115,4 +115,11 @@ CREATE TABLE Historico(
 
     CONSTRAINT FK_Assinatura_Historico
     FOREIGN KEY(id_assinatura) REFERENCES Assinaturas(id_assinatura)
+);
+
+CREATE TABLE Log_Eventos(
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    evento VARCHAR(100) NOT NULL,
+    detalhes VARCHAR(100) NOT NULL,
+    data_evento TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
