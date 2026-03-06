@@ -2,7 +2,7 @@ USE Academia_FitFlow;
 
 DELIMITER $
 
-CREATE TRIGGER TRG_Gerar_Fatura
+CREATE TRIGGER IF NOT EXISTS TRG_Gerar_Fatura
 AFTER INSERT ON Assinaturas
 FOR EACH ROW
 BEGIN
@@ -39,14 +39,16 @@ BEGIN
             (id_fatura, valor_fatura, data_venc, status, id_assinatura)
             VALUES
             (NULL,var_valor_plano,var_data_venc,'Pendente', NEW.id_assinatura);
-
+        ELSE
+            SIGNAL SQLSTATE '45000' 
+            SET MESSAGE_TEXT = 'Erro na Trigger TRG_Registra_Historico: Falha ao inserir histórico.'; 
     END IF;
 
 END
 $
 
 
-CREATE TRIGGER TRG_Calcula_Fim_Assinatura 
+CREATE TRIGGER IF NOT EXISTS TRG_Calcula_Fim_Assinatura 
 BEFORE INSERT ON Assinaturas
 FOR EACH ROW
 BEGIN
@@ -62,12 +64,15 @@ BEGIN
         SET NEW.data_fim = DATE_ADD(
             NEW.data_inicio, INTERVAL var_duracao_plano DAY
         );
+    ELSE
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Erro na Trigger TRG_Calcula_Fim_Assinatura : Falha ao calcular data final da assinatura.';
     END IF;
 END 
 $
 
 
-CREATE TRIGGER TRG_Registra_Historico
+CREATE TRIGGER IF NOT EXISTS TRG_Registra_Historico
 AFTER UPDATE ON Assinaturas
 FOR EACH ROW
 BEGIN
@@ -82,9 +87,9 @@ BEGIN
         SET frase = CONCAT(
             'A matricula foi ',
             CASE NEW.status
-                WHEN 'ATIVA' THEN 'ativada com sucesso'
-                WHEN 'TRANCADA' THEN 'temporariamente trancada'
-                WHEN 'CANCELADA' THEN 'cancelada definitivamente'
+                WHEN 'Ativa' THEN 'ativada com sucesso'
+                WHEN 'Pausada' THEN 'temporariamente trancada'
+                WHEN 'Cancelada' THEN 'cancelada'
                 ELSE 'atualizada'
             END
         );
@@ -121,6 +126,9 @@ BEGIN
                 NEW.id_cliente,
                 OLD.id_assinatura
             );
+    ELSE
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Erro na Trigger TRG_Registra_Historico: Falha ao inserir histórico.';
     END IF;
 END
 $
