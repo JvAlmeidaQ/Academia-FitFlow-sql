@@ -1,4 +1,4 @@
-USE Academia_FitFlow;
+
 
 DELIMITER $
 
@@ -172,3 +172,5 @@ BEGIN
     COMMIT;
 END
 $
+
+DELIMITER ;
