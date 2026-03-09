@@ -1,5 +1,5 @@
 DROP DATABASE IF EXISTS Academia_FitFlow;
-CREATE DATABASE Academia_FitFlow;
+CREATE DATABASE IF NOT EXISTS Academia_FitFlow;
 USE Academia_FitFlow;
 
 -- 2. DDL - Tabelas
