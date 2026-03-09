@@ -1,8 +1,8 @@
 # FitFlow Management System 🏋️‍♂️
 
-**FitFlow** é um sistema de banco de dados projetado para simular o gerenciamento completo de uma rede de academias.
+O projeto **FitFlow** é um sistema de banco de dados projetado para simular o gerenciamento de uma rede de academias.
 
-O projeto foi desenvolvido utilizando **MySQL** focando em **modelagem relacional normalizada, automação de processos financeiros e análise de dados**.
+Foi desenvolvido utilizando **MySQL** focado em **modelagem relacional normalizada, e análise de dados**.
 
 Entre os recursos implementados estão **assinaturas recorrentes, Linha do Tempo automática de alterações e consultas para vizualização do negócio**.
 
@@ -14,11 +14,10 @@ Este projeto foi criado para consolidar conhecimentos em:
 
 * Modelagem de dados relacional
 * SQL
-* Automação com **Triggers** e **Stored Procedures**
-* Agendamento de tarefas com **Event Scheduler**
-* Construção de métricas de negócio utilizando **consultas analíticas**
+* Uso de **Triggers** e **Stored Procedures**
+* Construção de **consultas analíticas(Queries)** e **Views**
 
-A arquitetura foi projetada seguindo as **Três Formas Normais (3NF)** para garantir consistência e integridade dos dados.
+A arquitetura foi projetada pra seguir as **Três Formas Normais (3NF)** e garantir consistência e integridade dos dados.
 
 ---
 
@@ -35,21 +34,22 @@ A arquitetura foi projetada seguindo as **Três Formas Normais (3NF)** para gara
 * Geração automática de faturas mensais utilizando **Triggers**
 * Controle de pagamentos e inadimplência
 
-### 📜 Auditoria de Alterações
+### 📜 Historico de Alterações
 
-Sistema automático de histórico que registra:
+Sistema de histórico que registra:
 
 * Mudanças de plano
 * Alterações de status de assinatura
 * Linha do tempo de relacionamento do cliente com a academia
 
-### 📊 Business Intelligence (SQL Analytics)
+### 📊 Queries (SQL Analytics)
 
-O banco inclui **consultas analíticas prontas** para geração de insights como:
+O banco inclui **consultas analíticas prontas** para vizualização de metricas como:
 
 * faturamento por unidade
 * popularidade de planos
-* 
+* Detalhes Operacionais
+* Timeline do Historico
 ---
 
 # 🛠️ Tecnologias Utilizadas
@@ -67,7 +67,7 @@ O banco inclui **consultas analíticas prontas** para geração de insights como
 
 # 🏗️ Arquitetura do Projeto
 
-O projeto é modular e organizado em scripts SQL independentes.
+O projeto é foi organizado em scripts SQL independentes.
 
 ```
 sql/
@@ -84,10 +84,10 @@ Descrição dos arquivos:
 | Arquivo              | Função                                   |
 | -------------------- | ---------------------------------------- |
 | `01_schema.sql`      | Estrutura do banco e criação das tabelas |
-| `02_triggers.sql`    | Automação de faturamento e auditoria     |
+| `02_triggers.sql`    | Automação de Tarefas                     |
 | `03_procedures.sql`  | Lógicas de negócio                       |
 | `04_events_jobs.sql` | Tarefas agendadas                        |
-| `05_seed.sql`        | Dados simulados para testes              |
+| `05_seed.sql`        | Inserção de Dados para testes            |
 | `06_analytics.sql`   | Consultas analíticas                     |
 
 Um script principal (`Main.sql`) executa todos os arquivos e reconstrói o ambiente completo.
@@ -96,7 +96,7 @@ Um script principal (`Main.sql`) executa todos os arquivos e reconstrói o ambie
 
 # 🧠 Modelagem de Dados
 
-O modelo relacional foi projetado para representar o funcionamento de uma rede de academias.
+O modelo do Projeto foi feito para representar o funcionamento de uma rede de academias.
 
 Principais entidades do sistema:
 
@@ -107,7 +107,7 @@ Principais entidades do sistema:
 * **Faturas**
 * **Histórico de Alterações**
 
-Regras importantes da modelagem:
+Algumas das Regras/Relacionamentos da modelagem:
 
 * Cada **cliente pertence a uma unidade**
 * Uma **assinatura conecta cliente e plano**
@@ -124,45 +124,62 @@ docs/ERD_Academia_FitFlow.jpg
 
 # 📊 Business Intelligence (SQL Analytics)
 
-As consultas analíticas do projeto são organizadas em três níveis de análise.
+As queries do projeto são organizadas em três níveis de análise.
 
-| Nível       | Objetivo                | Exemplos                             |
-| ----------- | ----------------------- | ------------------------------------ |
-| Operacional | Monitoramento diário    | clientes ativos, faturas a vencer    |
-| Gerencial   | Performance da academia | faturamento por unidade              |
-| Estratégico | Tomada de decisão       | churn rate e segmentação de clientes |
+| Nível       | Objetivo                | Exemplos                                      |
+| ----------- | ----------------------- | ----------------------------------------------|
+| Operacional | Monitoramento diário    | clientes ativos por região, faturas a vencer  |
+| Gerencial   | Performance da academia | Performance por unidade e planos              |
+| Estratégico | Tomada de decisão       | churn rate e segmentação de clientes          |
 
 ---
 
 # 📈 Exemplo de Query Analítica
 
-Cálculo de faturamento total por unidade:
+Cálculo da Performance por unidade:
 
 ```sql
 SELECT 
-    unidade_id,
-    SUM(valor_pago) AS faturamento_total
-FROM faturas
-WHERE status = 'PAGA'
-GROUP BY unidade_id;
+    U.nome_unidade AS 'Unidades',
+    SUM(F.valor_fatura) AS 'Valores Pago'
+FROM Faturas F
+INNER JOIN Assinaturas A
+    ON A.id_assinatura = F.id_assinatura
+INNER JOIN Clientes C
+    ON C.id_cliente = A.id_cliente
+INNER JOIN Unidades U 
+    ON U.id_unidade = C.id_unidade
+WHERE F.status = 'Pago'
+GROUP BY(U.nome_unidade);
 ```
 
 Exemplo de segmentação de clientes usando **Window Functions**:
 
 ```sql
-SELECT 
-    cliente_id,
-    SUM(valor_pago) AS receita_total,
-    NTILE(10) OVER (ORDER BY SUM(valor_pago) DESC) AS segmento
-FROM faturas
-GROUP BY cliente_id;
+SELECT * FROM (
+    SELECT 
+        C.id_cliente,
+        C.nome,
+        SUM(F.valor_fatura) AS 'Valor Gasto',
+        NTILE(10) OVER (ORDER BY SUM(F.valor_fatura) DESC) AS Porcentagem
+    FROM Clientes C
+    INNER JOIN Assinaturas A 
+        ON A.id_cliente = C.id_cliente
+    INNER JOIN Faturas F 
+        ON F.id_assinatura = A.id_assinatura 
+    WHERE C.status = 'Ativo'
+      AND A.status IN ('ATIVA','PAUSADA')
+      AND F.status = 'Pago'
+    GROUP BY C.id_cliente, C.nome
+) AS Ranking_VIP
+WHERE Porcentagem = 1;
 ```
 
 ---
 
 # 🚀 Como Executar o Projeto
 
-Certifique-se de possuir um servidor **MySQL ou MariaDB** em execução.
+Certifique-se de possuir um servidor **MySQL** em execução.
 
 Execute o script principal:
 
@@ -180,3 +197,6 @@ Esse comando irá:
 ---
 
 Projeto desenvolvido para fins educacionais.
+
+João Vitor Almeida Queiroz
+
