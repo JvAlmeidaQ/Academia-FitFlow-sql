@@ -141,16 +141,17 @@ Cálculo da Performance por unidade:
 ```sql
 SELECT 
     U.nome_unidade AS 'Unidades',
-    SUM(F.valor_fatura) AS 'Valores Pago'
-FROM Faturas F
-INNER JOIN Assinaturas A
-    ON A.id_assinatura = F.id_assinatura
-INNER JOIN Clientes C
-    ON C.id_cliente = A.id_cliente
-INNER JOIN Unidades U 
-    ON U.id_unidade = C.id_unidade
-WHERE F.status = 'Pago'
-GROUP BY(U.nome_unidade);
+    IFNULL(SUM(F.valor_fatura), 0) AS 'Valores Pagos'
+FROM Unidades U
+LEFT JOIN Clientes C 
+    ON C.id_unidade = U.id_unidade
+LEFT JOIN Assinaturas A 
+    ON A.id_cliente = C.id_cliente
+LEFT JOIN Faturas F 
+    ON F.id_assinatura = A.id_assinatura
+    AND F.status = 'Pago'
+GROUP BY U.nome_unidade
+ORDER BY `Valores Pagos` DESC;
 ```
 
 Exemplo de segmentação de clientes usando **Window Functions**:
@@ -161,7 +162,7 @@ SELECT * FROM (
         C.id_cliente,
         C.nome,
         SUM(F.valor_fatura) AS 'Valor Gasto',
-        NTILE(10) OVER (ORDER BY SUM(F.valor_fatura) DESC) AS Porcentagem
+        NTILE(4) OVER (ORDER BY SUM(F.valor_fatura) DESC) AS grupo_vip
     FROM Clientes C
     INNER JOIN Assinaturas A 
         ON A.id_cliente = C.id_cliente
@@ -172,7 +173,7 @@ SELECT * FROM (
       AND F.status = 'Pago'
     GROUP BY C.id_cliente, C.nome
 ) AS Ranking_VIP
-WHERE Porcentagem = 1;
+WHERE GRUPO_VIP = 1;
 ```
 
 ---
